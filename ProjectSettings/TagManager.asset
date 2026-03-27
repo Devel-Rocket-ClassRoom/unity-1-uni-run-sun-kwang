@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 3
   tags:
   - Dead
+  - Platform
+  - Item
   layers:
   - Default
   - TransparentFX
@@ -50,6 +52,9 @@ TagManager:
     locked: 0
   - name: Obstacle
     uniqueID: 346068497
+    locked: 0
+  - name: Item
+    uniqueID: 2589065247
     locked: 0
   - name: Platform
     uniqueID: 2561802177
