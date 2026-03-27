@@ -4,7 +4,7 @@ using UnityEngine;
 public class PlatformSpawner : MonoBehaviour
 {
     [SerializeField]
-    private GameObject platformPrefab;
+    private GameObject[] platformPrefabs;
     [SerializeField]
     private int count = 3;
     [SerializeField]
@@ -14,20 +14,26 @@ public class PlatformSpawner : MonoBehaviour
     [SerializeField]
     private Vector2 yRange = new Vector2(-3.5f, 1.5f);
 
-    private float xPos = 20f;
+    private float xPos = 15f;
 
-    private GameObject[] platforms;
-    private int currentIndex = 0;
+    private GameObject[,] platforms;
+    private int platformIndex = 0;
+    private int[] currentIndices;
     private float lastSpawnTime;
+    private bool start = true;
     //private GameManager gameManager;
 
     private void Awake()
     {
-        platforms = new GameObject[count];
-        for (int i = 0; i < platforms.Length; i++)
+        platforms = new GameObject[platformPrefabs.Length, count];
+        currentIndices = new int[count];
+        for (int i = 0; i < platformPrefabs.Length; i++)
         {
-            platforms[i] = Instantiate(platformPrefab);
-            platforms[i].SetActive(false);
+            for (int j = 0; j < count; j++)
+            {
+                platforms[i, j] = Instantiate(platformPrefabs[i]);
+                platforms[i, j].SetActive(false);
+            }
         }
     }
 
@@ -43,21 +49,22 @@ public class PlatformSpawner : MonoBehaviour
         //if (gameManager.IsGameOver)
         //    return;
 
-        if (Time.time >= lastSpawnTime + timeSpawn)
+        if (start || Time.time >= lastSpawnTime + timeSpawn)
         {
             lastSpawnTime = Time.time;
-            timeSpawn = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
-
+            timeSpawn = 0.99f;
+            platformIndex = Random.Range(0, platformPrefabs.Length);
             Vector2 pos;
 
             pos.x = xPos;
-            pos.y = Random.Range(yRange.x, yRange.y);
+            //pos.y = Random.Range(yRange.x, yRange.y);
+            pos.y = -4.5f;
+            platforms[platformIndex, currentIndices[platformIndex]].transform.position = pos;
 
-            platforms[currentIndex].transform.position = pos;
-
-            platforms[currentIndex].SetActive(false);
-            platforms[currentIndex].SetActive(true);
-            currentIndex = (int)Mathf.Repeat(currentIndex + 1, platforms.Length);
+            platforms[platformIndex, currentIndices[platformIndex]].SetActive(false);
+            platforms[platformIndex, currentIndices[platformIndex]].SetActive(true);
+            currentIndices[platformIndex] = (int)Mathf.Repeat(currentIndices[platformIndex] + 1, count);
+            start = false;
         }
     }
 }

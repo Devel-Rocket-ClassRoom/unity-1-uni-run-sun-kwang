@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,6 +15,25 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     public BoxCollider2D idleBoxCollider;
     public BoxCollider2D slideBoxCollider;
+    private int maxHealth = 100;
+    private int _currentHealth;
+
+    public Slider hpBar;
+
+    public int CurrentHealth
+    {
+        get { return _currentHealth; }
+        set
+        {
+ 
+            _currentHealth = Mathf.Clamp(value, 0, maxHealth);
+            if (_currentHealth <= 0)
+            {
+                hpBar.value = 0f;
+                Die();
+            }
+        }
+    }
     //private AudioSource audioSource;
 
     //public GameManager gameManager;
@@ -25,6 +45,7 @@ public class PlayerController : MonoBehaviour
         idleBoxCollider = GetComponent<BoxCollider2D>();
         idleBoxCollider.enabled = true;
         slideBoxCollider.enabled = false;
+        _currentHealth = maxHealth;
         //audioSource = GetComponent<AudioSource>();
     }
     // Start()는 첫 번째 Update 직전에 호출
@@ -40,6 +61,7 @@ public class PlayerController : MonoBehaviour
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             //audioSource.Play();
             jumpCount++;
+            isSlide = false;
             idleBoxCollider.enabled = true;
             slideBoxCollider.enabled = false;
         }
@@ -73,11 +95,11 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.collider.CompareTag("Platform") && collision.contacts[0].normal.y > 0.7f)
+        if (collision.collider.CompareTag("Platform") && collision.contacts[0].normal.y > 0.5f)
         {
+            rb.linearVelocityY = 0;
             isGrounded = true;
             jumpCount = 0;
-            rb.linearVelocityY = 0;
         }
     }
     // Normal, 법선: 표면의 수직 방향
@@ -85,6 +107,7 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.collider.CompareTag("Platform"))
         {
+            Debug.Log("Player left the platform");
             isGrounded = false;
         }
     }
@@ -95,17 +118,35 @@ public class PlayerController : MonoBehaviour
         {
             Die();
         }
+        else if (other.CompareTag("Hit"))
+        {
+            CurrentHealth -= 30;
+            if (hpBar != null)
+                hpBar.value = CurrentHealth / (float)maxHealth;
+        }
+        if (other.CompareTag("Item"))
+        {
+            other.gameObject.SetActive(false);
+            GetItem();
+        }
     }
 
     private void Die()
     {
         rb.linearVelocity = Vector2.zero;
         rb.bodyType = RigidbodyType2D.Kinematic; // 물리적 상호작용(충돌, 중력 등)을 비활성화
-        Debug.Log("Player Dead");
+        animator.SetBool("isDead", true);
         animator.SetTrigger("Die");
         //audioSource.PlayOneShot(deathClip);
         isDead = true;
         //gameManager.OnPlayerDead();
         GetComponent<Collider2D>().enabled = false;
+    }
+
+    private void GetItem()
+    {
+        CurrentHealth += 1;
+        if (hpBar != null)
+            hpBar.value = CurrentHealth / (float)maxHealth;
     }
 }

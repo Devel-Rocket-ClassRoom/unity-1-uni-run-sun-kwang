@@ -1,8 +1,10 @@
+using System.Threading;
 using UnityEngine;
 
 public class Platform : MonoBehaviour
 {
     public GameObject[] obstacles;
+    public GameObject[] cherries;
     public float obstacleRatio = 0.3f;
     //private GameManager gameManager;
     private bool isStepped = false;
@@ -12,13 +14,20 @@ public class Platform : MonoBehaviour
         //gameManager = GameObject.FindWithTag("GameController").GetComponent<GameManager>();
     }
 
-
     private void OnEnable()
     {
-        foreach (var obstacle in obstacles)
+        if (obstacles != null)
         {
-            obstacle.SetActive(Random.value < obstacleRatio);
+            foreach (var obstacle in obstacles)
+            {
+                obstacle.SetActive(Random.value < obstacleRatio);
+            }
         }
+        foreach (var cherry in cherries)
+        {
+            cherry.SetActive(true);
+        }
+
         isStepped = false;
     }
 
