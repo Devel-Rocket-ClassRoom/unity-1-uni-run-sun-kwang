@@ -8,6 +8,7 @@ TagManager:
   - Platform
   - Item
   - Hit
+  - Sprite
   layers:
   - Default
   - TransparentFX

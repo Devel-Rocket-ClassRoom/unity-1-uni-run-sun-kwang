@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,53 +14,49 @@ public class PlayerController : MonoBehaviour
     private bool isSlide = false;
 
     private Rigidbody2D rb;
-    private Animator animator;
     public BoxCollider2D idleBoxCollider;
     public BoxCollider2D slideBoxCollider;
-    private int maxHealth = 100;
-    private int _currentHealth;
+    private float maxHealth = 100f;
+    private float _currentHealth;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float checkRadius = 0.1f;
     [SerializeField] private LayerMask groundLayer;
-    public Slider hpBar;
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Animator animator;
 
     private float hitInterval = 1f;
-    private float hitTImer = 0f;
+    private float hitTimer = 0f;
     private bool isHit = false;
 
-    private SpriteRenderer spriteRenderer;
     private float blinkInterval = 0.1f;
     private float blinkTimer = 0f;
 
-    public int CurrentHealth
+    private int score = 0;
+
+    public event Action<int> OnScoreChanged;
+    public event Action<float> OnHpChanged;
+    public event Action OnGameOver;
+
+    public float CurrentHealth
     {
         get { return _currentHealth; }
         set
         {
-            _currentHealth = Mathf.Clamp(value, 0, maxHealth);
-            if (hpBar != null)
-                hpBar.value = _currentHealth / (float)maxHealth;
-            if (_currentHealth <= 0)
+            _currentHealth = Mathf.Clamp(value, 0f, maxHealth);
+            OnHpChanged?.Invoke(_currentHealth / maxHealth);
+            if (_currentHealth <= 0f)
             {
-                hpBar.value = 0f;
                 Die();
             }
         }
     }
-    //private AudioSource audioSource;
-
-    //public GameManager gameManager;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        animator = GetComponentInChildren<Animator>();
-        idleBoxCollider = GetComponent<BoxCollider2D>();
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         idleBoxCollider.enabled = true;
         slideBoxCollider.enabled = false;
         _currentHealth = maxHealth;
-        //audioSource = GetComponent<AudioSource>();
     }
     // Start()는 첫 번째 Update 직전에 호출
     // Awake()는 Instantiate()로 객체가 생성되고 바로 호출
@@ -102,25 +99,28 @@ public class PlayerController : MonoBehaviour
         }
         if (isHit)
         {
-            hitTImer += Time.deltaTime;
+            hitTimer += Time.deltaTime;
             blinkTimer += Time.deltaTime;
-            if (hitTImer >= hitInterval)
+
+            if (blinkTimer >= blinkInterval)
+            {
+                Color color = spriteRenderer.color;
+                color.a = color.a == 1f ? 0f : 1f;
+                spriteRenderer.color = color;
+                blinkTimer = 0f;
+            }
+
+            if (hitTimer >= hitInterval)
             {
                 isHit = false;
-                hitTImer = 0f;
+                hitTimer = 0f;
+                blinkTimer = 0f;
+                Color color = spriteRenderer.color;
+                color.a = 1f;
+                spriteRenderer.color = color;
             }
         }
-        else
-        {
-            spriteRenderer.enabled = true;
-        }
-        
-        if (blinkTimer >= blinkInterval)
-        {
-            spriteRenderer.enabled = !spriteRenderer.enabled;
-            blinkTimer = 0f;
-        }
-        
+
 
         animator.SetBool("Grounded", isGrounded);
         animator.SetInteger("JumpCount", jumpCount);
@@ -137,7 +137,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (other.CompareTag("Hit") && !isHit)
         {
-            CurrentHealth -= 30;
+            TakeDamage(30f);
             isHit = true;
         }
         if (other.CompareTag("Item"))
@@ -146,6 +146,11 @@ public class PlayerController : MonoBehaviour
             GetItem();
         }
     }
+    
+    public void TakeDamage(float damage)
+    {
+        CurrentHealth -= damage;
+    }
 
     private void Die()
     {
@@ -153,15 +158,16 @@ public class PlayerController : MonoBehaviour
         rb.bodyType = RigidbodyType2D.Kinematic; // 물리적 상호작용(충돌, 중력 등)을 비활성화
         animator.SetBool("isDead", true);
         animator.SetTrigger("Die");
-        //audioSource.PlayOneShot(deathClip);
         isDead = true;
-        //gameManager.OnPlayerDead();
         GetComponent<Collider2D>().enabled = false;
+        OnGameOver?.Invoke();
     }
 
     private void GetItem()
     {
         CurrentHealth += 1;
+        score++;
+        OnScoreChanged(score);
     }
 
     private void OnDrawGizmos()
