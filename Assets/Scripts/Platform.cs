@@ -4,7 +4,7 @@ using UnityEngine;
 public class Platform : MonoBehaviour
 {
     public GameObject[] obstacles;
-    public GameObject[] cherries;
+    public GameObject[] items;
     public float obstacleRatio = 0.3f;
     //private GameManager gameManager;
     private bool isStepped = false;
@@ -23,9 +23,10 @@ public class Platform : MonoBehaviour
                 obstacle.SetActive(Random.value < obstacleRatio);
             }
         }
-        foreach (var cherry in cherries)
+        foreach (var item in items)
         {
-            cherry.SetActive(true);
+            //item.transform.localPosition = item.GetComponent<Item>().orgPos;
+            item.SetActive(true);
         }
 
         isStepped = false;

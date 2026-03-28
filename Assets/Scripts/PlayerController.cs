@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -23,19 +24,38 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Animator animator;
+    [SerializeField] private PlatformSpawner platformSpawner;
 
     private float hitInterval = 1f;
     private float hitTimer = 0f;
     private bool isHit = false;
-
     private float blinkInterval = 0.1f;
     private float blinkTimer = 0f;
-
     private int score = 0;
-
     public event Action<int> OnScoreChanged;
     public event Action<float> OnHpChanged;
     public event Action OnGameOver;
+
+    private Vector3 giantScale = new Vector3(3f, 3f, 1f);
+    private Vector3 originalScale;
+
+    private bool isGiant = false;
+    private bool isBooster = false;
+    private bool isMagnet = false;
+
+    private float giantDuration = 5f;
+    private float giantTimer = 0f;
+    private float boosterDuration = 5f;
+    private float boosterTimer = 0f;
+    private float magnetDuration = 5f;
+    private float magnetTimer = 0f;
+
+    private float boostMultiplier = 1.8f;
+    private bool IsInvincible
+    {
+        get { return isGiant || isBooster; }
+    }
+
 
     public float CurrentHealth
     {
@@ -57,6 +77,7 @@ public class PlayerController : MonoBehaviour
         idleBoxCollider.enabled = true;
         slideBoxCollider.enabled = false;
         _currentHealth = maxHealth;
+        originalScale = transform.localScale;
     }
     // Start()는 첫 번째 Update 직전에 호출
     // Awake()는 Instantiate()로 객체가 생성되고 바로 호출
@@ -65,7 +86,7 @@ public class PlayerController : MonoBehaviour
         if (isDead)
             return;
 
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, isGiant ? checkRadius * 3 : checkRadius, groundLayer);
 
         if (!wasGrounded && isGrounded)
         {
@@ -85,17 +106,13 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocityY *= 0.5f;
         }
 
-        if (Input.GetButton("Fire2") && isGrounded)
+        else if (Input.GetButton("Fire2") && isGrounded)
         {
             isSlide = true;
-            idleBoxCollider.enabled = false;
-            slideBoxCollider.enabled = true;
         }
         else if (Input.GetButtonUp("Fire2"))
         {
             isSlide = false;
-            idleBoxCollider.enabled = true;
-            slideBoxCollider.enabled = false;
         }
         if (isHit)
         {
@@ -121,6 +138,19 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        ItemTimer();
+
+        if (!isGrounded) isSlide = false;
+        if (isSlide)
+        {
+            idleBoxCollider.enabled = false;
+            slideBoxCollider.enabled = true;
+        }
+        else
+        {
+            idleBoxCollider.enabled = true;
+            slideBoxCollider.enabled = false;
+        }
 
         animator.SetBool("Grounded", isGrounded);
         animator.SetInteger("JumpCount", jumpCount);
@@ -135,7 +165,7 @@ public class PlayerController : MonoBehaviour
         {
             CurrentHealth = 0;
         }
-        else if (other.CompareTag("Hit") && !isHit)
+        else if (other.CompareTag("Hit") && !isHit && !IsInvincible)
         {
             TakeDamage(30f);
             isHit = true;
@@ -143,10 +173,24 @@ public class PlayerController : MonoBehaviour
         if (other.CompareTag("Item"))
         {
             other.gameObject.SetActive(false);
-            GetItem();
+            GetItem(other.GetComponent<Item>().itemType);
         }
     }
+
     
+
+    private IEnumerator ScaleTo(Vector3 target)
+    {
+        float t = 0f;
+        Vector3 start = transform.localScale;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 5f;
+            transform.localScale = Vector3.Lerp(start, target, t);
+            yield return null;
+        }
+    }
+
     public void TakeDamage(float damage)
     {
         CurrentHealth -= damage;
@@ -163,19 +207,63 @@ public class PlayerController : MonoBehaviour
         OnGameOver?.Invoke();
     }
 
-    private void GetItem()
+    private void GetItem(ItemType type)
     {
-        CurrentHealth += 1;
-        score++;
-        OnScoreChanged(score);
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (groundCheck != null)
+        switch (type)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, checkRadius);
+            case ItemType.Cherry:
+                CurrentHealth += 1;
+                score++;
+                OnScoreChanged(score);
+                break;
+            case ItemType.Melon:
+                StartCoroutine(ScaleTo(giantScale));
+                giantTimer = 0f;
+                isGiant = true;
+                break;
+            case ItemType.Banana:
+                platformSpawner.SetSpeed(30);
+                boosterTimer = 0f;
+                animator.speed = boostMultiplier;
+                isBooster = true;
+                break;
+            case ItemType.Kiwi:
+                magnetTimer = 0f;
+                isMagnet = true;
+                break;
+        }
+    }
+    private void ItemTimer()
+    {
+        if (isGiant)
+        {
+            giantTimer += Time.deltaTime;
+            if (giantTimer >= giantDuration)
+            {
+                StartCoroutine(ScaleTo(originalScale));
+                isGiant = false;
+                giantTimer = 0f;
+            }
+        }
+        if (isBooster)
+        {
+            boosterTimer += Time.deltaTime;
+            if (boosterTimer >= boosterDuration)
+            {
+                platformSpawner.SetSpeed(10);
+                isBooster = false;
+                animator.speed = 1f;
+                boosterTimer = 0f;
+            }
+        }
+        if (isMagnet)
+        {
+            magnetTimer += Time.deltaTime;
+            if (magnetTimer >= magnetDuration)
+            {
+                isMagnet = false;
+                magnetTimer = 0f;
+            }
         }
     }
 }

@@ -21,6 +21,8 @@ public class PlatformSpawner : MonoBehaviour
     private int[] currentIndices;
     private float lastSpawnTime;
     private bool start = true;
+    private int normalSpeed = 10;
+    private int inputSpeed;
     //private GameManager gameManager;
 
     private void Awake()
@@ -35,6 +37,7 @@ public class PlatformSpawner : MonoBehaviour
                 platforms[i, j].SetActive(false);
             }
         }
+        inputSpeed = normalSpeed;
     }
 
     private void Start()
@@ -49,7 +52,7 @@ public class PlatformSpawner : MonoBehaviour
         //if (gameManager.IsGameOver)
         //    return;
 
-        if (start || Time.time >= lastSpawnTime + timeSpawn)
+        if (start || Time.time >= lastSpawnTime + timeSpawn * (normalSpeed / (float)inputSpeed))
         {
             lastSpawnTime = Time.time;
             timeSpawn = 0.99f;
@@ -65,6 +68,18 @@ public class PlatformSpawner : MonoBehaviour
             platforms[platformIndex, currentIndices[platformIndex]].SetActive(true);
             currentIndices[platformIndex] = (int)Mathf.Repeat(currentIndices[platformIndex] + 1, count);
             start = false;
+        }
+    }
+
+    public void SetSpeed(int speed)
+    {
+        inputSpeed = speed;
+        for (int i = 0; i < platformPrefabs.Length; i++)
+        {
+            for (int j = 0; j < count; j++)
+            {
+                platforms[i, j].GetComponent<ScrollingMove>().speed = speed;
+            }
         }
     }
 }
