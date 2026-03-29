@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     private float maxHealth = 100f;
     private float _currentHealth;
     [SerializeField] private Transform groundCheck;
-    [SerializeField] private float checkRadius = 0.1f;
+    [SerializeField] private float checkRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Animator animator;
@@ -92,6 +92,7 @@ public class PlayerController : MonoBehaviour
         {
             jumpCount = 0;
         }
+
         if (Input.GetButtonDown("Fire1") && jumpCount < 2)
         {
             rb.linearVelocityY = 0;
@@ -137,7 +138,8 @@ public class PlayerController : MonoBehaviour
                 spriteRenderer.color = color;
             }
         }
-
+        Debug.Log($"isGrounded: {isGrounded}");
+        Debug.Log($"wasGrounded: {wasGrounded}");
         ItemTimer();
 
         if (!isGrounded) isSlide = false;
@@ -242,6 +244,7 @@ public class PlayerController : MonoBehaviour
             {
                 StartCoroutine(ScaleTo(originalScale));
                 isGiant = false;
+                isHit = true;
                 giantTimer = 0f;
             }
         }
@@ -252,6 +255,7 @@ public class PlayerController : MonoBehaviour
             {
                 platformSpawner.SetSpeed(10);
                 isBooster = false;
+                isHit = true;
                 animator.speed = 1f;
                 boosterTimer = 0f;
             }

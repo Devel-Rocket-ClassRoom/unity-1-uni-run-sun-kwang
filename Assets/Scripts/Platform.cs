@@ -1,18 +1,12 @@
-using System.Threading;
 using UnityEngine;
 
 public class Platform : MonoBehaviour
 {
     public GameObject[] obstacles;
     public GameObject[] items;
+    public GameObject[] powerItems;
     public float obstacleRatio = 0.3f;
-    //private GameManager gameManager;
-    private bool isStepped = false;
-
-    private void Start()
-    {
-        //gameManager = GameObject.FindWithTag("GameController").GetComponent<GameManager>();
-    }
+    public float powerItemRatio = 0.1f;
 
     private void OnEnable()
     {
@@ -28,16 +22,17 @@ public class Platform : MonoBehaviour
             //item.transform.localPosition = item.GetComponent<Item>().orgPos;
             item.SetActive(true);
         }
-
-        isStepped = false;
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.collider.CompareTag("Player") && !isStepped)
+        if (powerItems != null)
         {
-            isStepped = true;
-            //gameManager.AddScore(1);
+            for (int i = 0; i < powerItems.Length; i++)
+            {
+                powerItems[i].SetActive(false);
+            }
+            if (Random.value < powerItemRatio)
+            {
+                int index = Random.Range(0, powerItems.Length);
+                powerItems[index].SetActive(true);
+            }
         }
     }
 }
